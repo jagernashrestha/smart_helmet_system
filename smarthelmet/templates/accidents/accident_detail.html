@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% block title %}Accident #{{ accident.pk }} Details{% endblock %}
+{% block page_title %}🚨 Accident #{{ accident.pk }} Details{% endblock %}
+
+{% block content %}
+
+<div class="row g-4">
+    <!-- Info Card -->
+    <div class="col-lg-5">
+        <div class="card mb-4">
+            <div class="card-header p-3" style="background:{% if not accident.resolved %}#fff0f0{% else %}#f0fff0{% endif %};">
+                {% if not accident.resolved %}
+                <span class="badge bg-danger me-2">ACTIVE</span>
+                {% else %}
+                <span class="badge bg-success me-2">RESOLVED</span>
+                {% endif %}
+                Accident Report
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <td class="text-muted fw-semibold" style="width:40%;">Helmet ID</td>
+                        <td><strong>{{ accident.helmet.helmet_id }}</strong></td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Rider</td>
+                        <td>{{ accident.helmet.rider.name|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Phone</td>
+                        <td>{{ accident.helmet.rider.phone|default:"N/A" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Emergency Contact</td>
+                        <td>
+                            {{ accident.helmet.rider.emergency_contact_name|default:"N/A" }}<br>
+                            <strong>{{ accident.helmet.rider.emergency_contact_phone|default:"" }}</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Severity</td>
+                        <td>
+                            {% if accident.severity == 'high' %}
+                            <span class="badge bg-danger">🔴 HIGH</span>
+                            {% elif accident.severity == 'medium' %}
+                            <span class="badge bg-warning text-dark">🟡 MEDIUM</span>
+                            {% else %}
+                            <span class="badge bg-info text-dark">🔵 LOW</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Location</td>
+                        <td>{{ accident.location_description }}</td>
+                    </tr>
+                    {% if accident.latitude %}
+                    <tr>
+                        <td class="text-muted fw-semibold">Coordinates</td>
+                        <td>
+                            {{ accident.latitude }}, {{ accident.longitude }}<br>
+                            <a href="https://www.google.com/maps?q={{ accident.latitude }},{{ accident.longitude }}"
+                               target="_blank" class="btn btn-sm btn-outline-primary mt-1">
+                                <i class="bi bi-map me-1"></i>Open in Google Maps
+                            </a>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    <tr>
+                        <td class="text-muted fw-semibold">Date & Time</td>
+                        <td>{{ accident.timestamp|date:"F d, Y — h:i A" }}</td>
+                    </tr>
+                    <tr>
+                        <td class="text-muted fw-semibold">Status</td>
+                        <td>
+                            {% if accident.resolved %}
+                            <span class="text-success fw-bold">✅ Resolved</span>
+                            {% else %}
+                            <span class="text-danger fw-bold">⚠️ Needs Attention</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex gap-2">
+            <a href="{% url 'accident_list' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back
+            </a>
+            {% if not accident.resolved %}
+            <form method="post" action="{% url 'accident_resolve' accident.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success">
+                    <i class="bi bi-check2-circle me-1"></i> Mark as Resolved
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Map Card -->
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header p-3">
+                <i class="bi bi-geo-alt-fill text-danger me-2"></i>Accident Location
+            </div>
+            <div class="card-body p-2">
+                <div id="detail-map" style="height:450px; border-radius:10px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+{% if accident.latitude %}
+const lat = {{ accident.latitude }};
+const lng = {{ accident.longitude }};
+{% else %}
+// Default to Kathmandu if no GPS
+const lat = 27.7172;
+const lng = 85.3240;
+{% endif %}
+
+const map = L.map('detail-map').setView([lat, lng], 15);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+// Red pulsing marker for accident location
+const redIcon = L.divIcon({
+    html: `<div style="
+        background:red; width:20px; height:20px;
+        border-radius:50%; border:3px solid white;
+        box-shadow: 0 0 15px rgba(255,0,0,0.8);
+        animation: pulse 1s infinite alternate;
+    "></div>`,
+    className: '',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
+});
+
+L.marker([lat, lng], {icon: redIcon})
+    .addTo(map)
+    .bindPopup(`
+        <strong>🚨 Accident Location</strong><br>
+        Helmet: {{ accident.helmet.helmet_id }}<br>
+        Rider: {{ accident.helmet.rider.name|default:"Unknown" }}<br>
+        Time: {{ accident.timestamp|date:"h:i A" }}
+    `)
+    .openPopup();
+</script>
+{% endblock %}

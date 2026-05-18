@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Login — Smart Helmet{% endblock %}
+{% block content %}
+<div style="background: linear-gradient(135deg, #1a1a2e, #16213e); min-height: 100vh; display: flex; align-items: center;">
+    <div class="card login-card w-100">
+        <div class="card-body p-5">
+            <div class="text-center mb-4">
+                <i class="bi bi-shield-check" style="font-size:3rem; color:#0066ff;"></i>
+                <h3 class="mt-2 fw-bold">Smart Helmet System</h3>
+                <p class="text-muted">Accident Detection Dashboard</p>
+            </div>
+            <form method="post">
+                {% csrf_token %}
+                {% if form.errors %}
+                <div class="alert alert-danger">Invalid username or password.</div>
+                {% endif %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Username</label>
+                    <input type="text" name="username" class="form-control form-control-lg" placeholder="Enter username" autofocus>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">Password</label>
+                    <input type="password" name="password" class="form-control form-control-lg" placeholder="Enter password">
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100">
+                    <i class="bi bi-box-arrow-in-right me-2"></i> Login
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

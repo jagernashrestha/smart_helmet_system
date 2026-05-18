@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard — Smart Helmet{% endblock %}
+{% block page_title %}Home Dashboard{% endblock %}
+
+{% block content %}
+
+<!-- Accident Alert Banner (shows only if there are unresolved accidents) -->
+{% if unresolved_accidents > 0 %}
+<div class="accident-banner">
+    <div class="d-flex align-items-center gap-3">
+        <span style="font-size:2rem;">🚨</span>
+        <div>
+            <div style="font-size:1.2rem; font-weight:700;">
+                {{ unresolved_accidents }} ACTIVE ACCIDENT ALERT{{ unresolved_accidents|pluralize }}
+            </div>
+            <div style="opacity:0.9;">Immediate attention required!</div>
+        </div>
+        <a href="{% url 'accident_list' %}" class="btn btn-light ms-auto">
+            View Alerts <i class="bi bi-arrow-right ms-1"></i>
+        </a>
+    </div>
+</div>
+{% endif %}
+
+<!-- Stat Cards Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stat-card bg-gradient-blue">
+            <i class="bi bi-cpu icon"></i>
+            <div class="number">{{ total_helmets }}</div>
+            <div class="label">Total Helmets</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-gradient-green">
+            <i class="bi bi-person-check icon"></i>
+            <div class="number">{{ active_riders }}</div>
+            <div class="label">Active Riders (Safe)</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-gradient-red">
+            <i class="bi bi-exclamation-triangle icon"></i>
+            <div class="number">{{ accidents_today }}</div>
+            <div class="label">Accidents Today</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="stat-card bg-gradient-purple">
+            <i class="bi bi-geo-alt icon"></i>
+            <div class="number">{{ gps_connected }}</div>
+            <div class="label">GPS Connected</div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Accidents + Map -->
+<div class="row g-4">
+    <!-- Recent Accidents Table -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header p-3 d-flex justify-content-between">
+                <span><i class="bi bi-exclamation-triangle text-danger me-2"></i>Recent Unresolved Accidents</span>
+                <a href="{% url 'accident_list' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                {% if recent_accidents %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Helmet</th>
+                                <th>Rider</th>
+                                <th>Severity</th>
+                                <th>Time</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for accident in recent_accidents %}
+                            <tr>
+                                <td><strong>{{ accident.helmet.helmet_id }}</strong></td>
+                                <td>{{ accident.helmet.rider.name|default:"Unknown" }}</td>
+                                <td>
+                                    {% if accident.severity == 'high' %}
+                                    <span class="badge bg-danger">HIGH</span>
+                                    {% elif accident.severity == 'medium' %}
+                                    <span class="badge bg-warning text-dark">MEDIUM</span>
+                                    {% else %}
+                                    <span class="badge bg-info text-dark">LOW</span>
+                                    {% endif %}
+                                </td>
+                                <td class="small text-muted">{{ accident.timestamp|date:"h:i A" }}</td>
+                                <td>
+                                    <a href="{% url 'accident_detail' accident.pk %}" class="btn btn-sm btn-outline-danger">View</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-check-circle" style="font-size:2.5rem; color:#00c851;"></i>
+                    <p class="mt-2">No active accidents. All riders are safe!</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Live Map -->
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header p-3">
+                <i class="bi bi-map text-primary me-2"></i>Live GPS Map — Kathmandu Area
+            </div>
+            <div class="card-body p-2">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Initialize Leaflet map centered on Kathmandu
+const map = L.map('map').setView([27.7172, 85.3240], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors'
+}).addTo(map);
+
+// Load and display helmet locations from the API
+function loadMarkers() {
+    fetch('/api/status/')
+        .then(res => res.json())
+        .then(data => {
+            data.helmets.forEach(helmet => {
+                // Only place marker if we have coordinates
+                // In a real system these would come from GPS data
+            });
+
+            // Show accident markers from latest alert
+            if (data.latest_alert && data.latest_alert.latitude) {
+                const a = data.latest_alert;
+                const redIcon = L.divIcon({
+                    html: '🚨',
+                    className: '',
+                    iconSize: [30, 30],
+                });
+                L.marker([a.latitude, a.longitude], {icon: redIcon})
+                    .addTo(map)
+                    .bindPopup(`
+                        <strong>🚨 ACCIDENT!</strong><br>
+                        Helmet: ${a.helmet_id}<br>
+                        Rider: ${a.rider}<br>
+                        Time: ${a.time}<br>
+                        <a href="/accidents/${a.id}/" target="_blank">View Details</a>
+                    `).openPopup();
+            }
+        });
+}
+
+loadMarkers();
+setInterval(loadMarkers, 10000); // refresh map markers every 10 seconds
+</script>
+{% endblock %}

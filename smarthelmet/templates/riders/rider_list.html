@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Riders{% endblock %}
+{% block page_title %}Rider Management{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header p-3 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-person-badge text-primary me-2"></i>All Registered Riders</span>
+        <a href="{% url 'rider_add' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i>Add Rider
+        </a>
+    </div>
+    <div class="card-body p-0">
+        {% if riders %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Name</th>
+                        <th>Phone</th>
+                        <th>Emergency Contact</th>
+                        <th>Helmet ID</th>
+                        <th>Registered</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for rider in riders %}
+                <tr>
+                    <td>
+                        <i class="bi bi-person-circle text-muted me-2"></i>
+                        <strong>{{ rider.name }}</strong>
+                    </td>
+                    <td>{{ rider.phone }}</td>
+                    <td>
+                        {{ rider.emergency_contact_name }}<br>
+                        <small class="text-muted">{{ rider.emergency_contact_phone }}</small>
+                    </td>
+                    <td><span class="badge bg-primary px-3 py-2">{{ rider.helmet_id }}</span></td>
+                    <td class="small text-muted">{{ rider.created_at|date:"M d, Y" }}</td>
+                    <td>
+                        <a href="{% url 'rider_edit' rider.pk %}" class="btn btn-sm btn-outline-primary me-1">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <a href="{% url 'rider_delete' rider.pk %}" class="btn btn-sm btn-outline-danger">
+                            <i class="bi bi-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-person-plus" style="font-size:3rem;"></i>
+            <p class="mt-3 fw-semibold">No riders registered yet.</p>
+            <a href="{% url 'rider_add' %}" class="btn btn-primary mt-2">
+                <i class="bi bi-plus-circle me-1"></i>Add First Rider
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

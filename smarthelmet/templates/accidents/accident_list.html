@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% block title %}Accident Alerts{% endblock %}
+{% block page_title %}🚨 Accident Alerts{% endblock %}
+
+{% block content %}
+
+<!-- Unresolved Accidents -->
+<div class="card mb-4">
+    <div class="card-header p-3" style="background: #fff0f0; border-left: 4px solid #dc3545;">
+        <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+        <strong>Active Alerts</strong>
+        <span class="badge bg-danger ms-2">{{ unresolved|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        {% if unresolved %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Helmet</th>
+                        <th>Rider</th>
+                        <th>Emergency Contact</th>
+                        <th>Location</th>
+                        <th>Severity</th>
+                        <th>Time</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for accident in unresolved %}
+                <tr style="background: #fff5f5;">
+                    <td><strong>#{{ accident.pk }}</strong></td>
+                    <td><strong>{{ accident.helmet.helmet_id }}</strong></td>
+                    <td>{{ accident.helmet.rider.name|default:"Unknown" }}</td>
+                    <td>
+                        {% if accident.helmet.rider %}
+                            {{ accident.helmet.rider.emergency_contact_name }}<br>
+                            <small class="text-muted">{{ accident.helmet.rider.emergency_contact_phone }}</small>
+                        {% else %}
+                            <span class="text-muted">N/A</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ accident.location_description }}
+                        {% if accident.latitude %}
+                        <br>
+                        <a href="https://www.google.com/maps?q={{ accident.latitude }},{{ accident.longitude }}"
+                           target="_blank" class="btn btn-sm btn-outline-primary mt-1">
+                            <i class="bi bi-map me-1"></i>Google Maps
+                        </a>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if accident.severity == 'high' %}
+                        <span class="badge bg-danger">🔴 HIGH</span>
+                        {% elif accident.severity == 'medium' %}
+                        <span class="badge bg-warning text-dark">🟡 MEDIUM</span>
+                        {% else %}
+                        <span class="badge bg-info text-dark">🔵 LOW</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">
+                        {{ accident.timestamp|date:"M d, Y" }}<br>
+                        <strong>{{ accident.timestamp|date:"h:i A" }}</strong>
+                    </td>
+                    <td>
+                        <a href="{% url 'accident_detail' accident.pk %}" class="btn btn-sm btn-primary mb-1">
+                            <i class="bi bi-eye"></i> Details
+                        </a>
+                        <form method="post" action="{% url 'accident_resolve' accident.pk %}" style="display:inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sm btn-success"
+                                onclick="return confirm('Mark this accident as resolved?')">
+                                <i class="bi bi-check2"></i> Resolve
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5 text-muted">
+            <i class="bi bi-check-circle-fill" style="font-size:3rem; color:#00c851;"></i>
+            <p class="mt-3 fw-semibold">No active accidents right now.</p>
+            <p class="small">All riders are safe!</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Resolved Accidents History -->
+<div class="card">
+    <div class="card-header p-3">
+        <i class="bi bi-clock-history me-2"></i>
+        <strong>Resolved Accident History</strong>
+        <span class="badge bg-secondary ms-2">{{ resolved|length }}</span>
+    </div>
+    <div class="card-body p-0">
+        {% if resolved %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Helmet</th>
+                        <th>Rider</th>
+                        <th>Location</th>
+                        <th>Severity</th>
+                        <th>Date & Time</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for accident in resolved %}
+                <tr>
+                    <td>#{{ accident.pk }}</td>
+                    <td>{{ accident.helmet.helmet_id }}</td>
+                    <td>{{ accident.helmet.rider.name|default:"Unknown" }}</td>
+                    <td>{{ accident.location_description }}</td>
+                    <td>
+                        {% if accident.severity == 'high' %}
+                        <span class="badge bg-danger">HIGH</span>
+                        {% elif accident.severity == 'medium' %}
+                        <span class="badge bg-warning text-dark">MEDIUM</span>
+                        {% else %}
+                        <span class="badge bg-info text-dark">LOW</span>
+                        {% endif %}
+                    </td>
+                    <td class="small">{{ accident.timestamp|date:"M d, Y h:i A" }}</td>
+                    <td>
+                        <a href="{% url 'accident_detail' accident.pk %}" class="btn btn-sm btn-outline-secondary">View</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-4 text-muted small">No history yet.</div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
